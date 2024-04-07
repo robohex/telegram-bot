@@ -1,57 +1,38 @@
 import logging
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
-from telegram import ForceReply, InlineKeyboardMarkup, InlineKeyboardButton, Update
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+# Add your Telegram bot token here
+TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
 
-# Enable logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
-# set higher logging level for httpx to avoid all GET and POST requests being logged
-logging.getLogger("httpx").setLevel(logging.WARNING)
+# Set up logging to log information level messages
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-logger = logging.getLogger(__name__)
+# Create a bot object and start it with the token
+updater = Updater(token=TOKEN, use_context=True)
+dispatcher = updater.dispatcher
 
+# Handler function for the /start command
+def start(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Hello, I'm a Telegram bot!")
 
-# Define a few command handlers. These usually take the two arguments update and
-# context.
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /start is issued."""
-    user = update.effective_user
-    reply_markup = InlineKeyboardMarkup(
-        [[InlineKeyboardButton("start massage here", callback_data="button_data")]]
-    )
-    await update.message.reply_html(
-        rf"differgem, oyun botudur.Bu bot en cok kullanilan eglence amacli kullanilan oyun botudur. Bu bot sayesinde qrupunuzdaki kullanicilari aktif tuta bilirsiniz.",
-        reply_markup=reply_markup,
-    )
+# Handler function for the /help command
+def help(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Help message will be written here.")
 
+# Handler function that echoes the incoming message
+def echo(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text=update.message.text)
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /help is issued."""
-    await update.message.reply_text("Help message here!")
+# Add command handlers and text handler
+start_handler = CommandHandler('start', start)
+help_handler = CommandHandler('help', help)
+echo_handler = MessageHandler(Filters.text & (~Filters.command), echo)
+dispatcher.add_handler(start_handler)
+dispatcher.add_handler(help_handler)
+dispatcher.add_handler(echo_handler)
 
+# Start the bot
+updater.start_polling()
 
-async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Echo the user message."""
-    await update.message.reply_text(update.message.text)
-
-
-def main() -> None:
-    """Start the bot."""
-    # Create the Application and pass it your bot's token.
-    application = Application.builder().token("BOT_TOKEN_HERE").build()
-
-    # on different commands - answer in Telegram
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("help", help_command))
-
-    # on non command i.e message - echo the message on Telegram
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
-
-    # Run the bot until the user presses Ctrl-C
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
-
-
-if __name__ == "__main__":
-    main()
+# Keep the bot running until Ctrl+C is pressed
+updater.idle()
